@@ -22,7 +22,6 @@ async function main() {
   await nestTokens(sdk, signer, config.parent, config.nestedEyebrows)
   await nestTokens(sdk, signer, config.parent, config.nestedHair)
   await nestTokens(sdk, signer, config.parent, config.nestedBeard)
-
 }
 
 main().catch((error) => {

@@ -1,5 +1,3 @@
-import {Sdk} from '@unique-nft/sdk'
-import {KeyringProvider} from '@unique-nft/accounts/keyring'
 import {createSdk} from './createSdk.mjs'
 import {COLLECTION_SCHEMA_NAME, UniqueCollectionSchemaToCreate} from '@unique-nft/schemas'
 import config from './config.mjs'
