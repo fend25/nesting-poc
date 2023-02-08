@@ -1,8 +1,30 @@
-import {createSdk} from './createSdk.mjs'
+import {KeyringProvider} from '@unique-nft/accounts/keyring'
+import {Sdk} from '@unique-nft/sdk'
 import {COLLECTION_SCHEMA_NAME, UniqueCollectionSchemaToCreate} from '@unique-nft/schemas'
-import config from './config.mjs'
+import JSON5 from 'json5'
+import {readFile} from 'fs/promises'
+import mergeImg from 'merge-img'
 
-// Creating a sample collection
+const json5 = await readFile('./config.json5', 'utf8')
+const config = JSON5.parse(json5)
+
+async function createSdk() {
+  try {
+    const signer = await KeyringProvider.fromMnemonic(config.mnemonic)
+
+    const clientOptions = {
+      baseUrl: config.baseUrl,
+      signer,
+    }
+    return {
+      sdk: new Sdk(clientOptions),
+      signer,
+    }
+  } catch (e) {
+    throw new Error(`Error when initializing SDK: ${e}`)
+  }
+}
+
 async function createCollection(sdk, collectionArgs) {
   const collectionSchema: UniqueCollectionSchemaToCreate = {
     schemaName: COLLECTION_SCHEMA_NAME.unique,
@@ -64,10 +86,27 @@ async function mintBulkTokens(sdk, address: string, collectionId: number, tokens
   return parsed
 }
 
+async function nestTokens(sdk, signer, parent, nested) {
+  const {parsed, error} = await sdk.tokens.nest.submitWaitResult({
+    address: signer.getAddress(),
+    parent,
+    nested,
+  })
+
+  if (error) {
+    console.log('The error occurred while nesting a token. ', error)
+    process.exit()
+  }
+
+  console.log(`Token ${parsed.tokenId} from collection ${parsed.collectionId} successfully nested`)
+}
+
 async function main() {
   const {sdk, signer} = await createSdk()
 
-  // parent collection
+  //////////////////////////////////////
+  // Create parent collection
+  //////////////////////////////////////
   const parentCollArgs = {
     address: signer.getAddress(),
     name: 'Parent collection',
@@ -77,7 +116,10 @@ async function main() {
   const parentCollection = await createCollection(sdk, parentCollArgs)
   console.log('The parent collection was created. Id: ', parentCollection.id)
 
-  // child collection
+
+  //////////////////////////////////////
+  // Create child collection
+  //////////////////////////////////////
   const childCollArgs = {
     address: signer.getAddress(),
     name: 'Child collection',
@@ -87,20 +129,26 @@ async function main() {
   const childCollection = await createCollection(sdk, childCollArgs)
   console.log('The child collection was created. Id: ', childCollection.id)
 
-  // mint parent token
+
+  //////////////////////////////////////
+  // Mint parent token
+  //////////////////////////////////////
   const parentTokenArgs = {
     address: signer.getAddress(),
     collectionId: parentCollection.id,
     data: config.parentToken,
   }
 
+
   const parentToken = await mintToken(sdk, parentTokenArgs)
   console.log(
     `The parent token was minted. Id: ${parentToken.tokenId}, collection id: ${parentCollection.id}`
   )
 
-  // mint child tokens
 
+  //////////////////////////////////////
+  // Mint child tokens
+  //////////////////////////////////////
   const childTokens = await mintBulkTokens(sdk, signer.getAddress(), childCollection.id, [
     config.childToken1,
     config.childToken2,
@@ -108,6 +156,39 @@ async function main() {
   ])
 
   console.log(childTokens)
+
+
+  //////////////////////////////////////
+  // Nest tokens
+  //////////////////////////////////////
+
+  for (const token of childTokens) {
+    await nestTokens(sdk, signer, parentToken, token)
+  }
+
+
+  //////////////////////////////////////
+  // Merge images
+  //////////////////////////////////////
+  const imgArray: string[] = []
+
+  const token = await sdk.tokens.get(parentToken)
+
+  if (token.image.fullUrl) imgArray.push(token.image.fullUrl)
+
+  const bundle = await sdk.tokens.getBundle(parentToken)
+
+  bundle.nestingChildTokens.forEach((token) => {
+    imgArray.push(token.image.fullUrl)
+  })
+
+  mergeImg(imgArray, {
+    align: 'center',
+    offset: -850,
+  }).then((img) => {
+    // Save image as file
+    img.write('output.png', () => console.log('Images were merged. The output is out.png'))
+  })
 }
 
 main().catch((error) => {

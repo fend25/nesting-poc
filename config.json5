@@ -1,5 +1,5 @@
-export default {
-  baseUrl: 'https://rest.unique.network/opal/v1', 
+{
+  baseUrl: 'https://rest.unq.uniq.su/v1', 
   // sample account for demo purposes
   mnemonic: 'bonus rubber price teach initial finger robust century scorpion pioneer require blade',
   parentToken: {

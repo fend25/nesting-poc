@@ -9,6 +9,8 @@
     "@unique-nft/accounts": "^0.3.4",
     "@unique-nft/schemas": "^0.1.0",
     "@unique-nft/sdk": "^0.2.5",
+    "dotenv": "^16.0.3",
+    "json5": "^2.2.3",
     "merge-img": "^2.1.3",
     "tsx": "^3.12.3"
   }
