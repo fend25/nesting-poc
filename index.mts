@@ -168,16 +168,14 @@ async function main() {
 
 
   //////////////////////////////////////
-  // Merge images
+  // Get images and merge them 
   //////////////////////////////////////
   const imgArray: string[] = []
 
   const token = await sdk.tokens.get(parentToken)
-
   if (token.image.fullUrl) imgArray.push(token.image.fullUrl)
 
   const bundle = await sdk.tokens.getBundle(parentToken)
-
   bundle.nestingChildTokens.forEach((token) => {
     imgArray.push(token.image.fullUrl)
   })
@@ -187,7 +185,7 @@ async function main() {
     offset: -850,
   }).then((img) => {
     // Save image as file
-    img.write('output.png', () => console.log('Images were merged. The output is out.png'))
+    img.write('output.png', () => console.log('Images were merged. The output is output.png'))
   })
 }
 
