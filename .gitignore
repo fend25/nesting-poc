@@ -22,10 +22,12 @@ coverage
 
 # API keys and secrets
 .env
+!.example.env
 
 # Dependency directory
 node_modules
 bower_components
+images/*
 
 # Editors
 .idea

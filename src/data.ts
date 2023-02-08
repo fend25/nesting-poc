@@ -1,7 +1,14 @@
-{
-  baseUrl: 'https://rest.unique.network/opal/v1', 
-  // sample account for demo purposes
-  mnemonic: 'bonus rubber price teach initial finger robust century scorpion pioneer require blade',
+export const data = {
+  parentCollection: {
+    name: 'Parent collection',
+    description: 'Collection for nesting POC - parent',
+    tokenPrefix: 'PRT',
+  },
+  childCollection: {
+    name: 'Child collection',
+    description: 'Collection for nesting POC - child',
+    tokenPrefix: 'CLD',
+  },
   parentToken: {
     image: {
       ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/golova.png',
@@ -26,7 +33,6 @@
       },
     },
   },
-
   childToken2: {
     data: {
       image: {
@@ -53,21 +59,5 @@
         _: 'Beard token for nesting',
       },
     },
-  },
-  parent: {
-    collectionId: 351,
-    tokenId: 1,
-  },
-  nestedEyebrows: {
-    collectionId: 352,
-    tokenId: 1,
-  },
-  nestedHair: {
-    collectionId: 352,
-    tokenId: 2,
-  },
-  nestedBeard: {
-    collectionId: 352,
-    tokenId: 3,
   },
 }
