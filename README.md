@@ -22,7 +22,7 @@ yarn tsx src/createCollectionAndTokens.ts
 After the tokens are minted (or if they already existed), we can run the `index.ts` file to get the token images and then merge them.
 Please take a look at the screenshot below to learn how this should work: 
 
-![Example](./images/example.png "This is how it works!") 
+![Example](/images/example.png "This is how it works!") 
 
 ```bash:no-line-numbers
 npm install
