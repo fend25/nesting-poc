@@ -2,7 +2,7 @@ import {getSdk, getConfig} from './utils'
 import {mergeImages} from './imageUtils'
 import {Client} from '@unique-nft/sdk'
 
-const getTokenImageUrls = async (sdk: Client, parentCollectionId: string): Promise<string[]> => {
+const getTokenImageUrls = async (sdk: Client, parentCollectionId: string | number): Promise<string[]> => {
   const imgArray: string[] = []
 
   const token = await sdk.tokens.get({collectionId: parentCollectionId, tokenId: 1})
