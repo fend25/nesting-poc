@@ -23,8 +23,8 @@ async function main() {
   const sdk = await getSdk(config.BASE_URL as string, config.MNEMONIC)
 
   const imgArray = await getTokenImageUrls(sdk, {
-    collectionId: config.PARENT_COLLECTION as string,
-    tokenId: 1,
+    collectionId: Number(config.PARENT_COLLECTION),
+    tokenId: Number(config.PARENT_TOKEN),
   })
   mergeImages(imgArray, Number(config.OFFSET), config.FILE_PATH as string)
 }
