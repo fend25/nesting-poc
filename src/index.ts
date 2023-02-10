@@ -20,13 +20,14 @@ const getTokenImageUrls = async (sdk: Client, parentToken: TokenIdQuery): Promis
 
 async function main() {
   const config = getConfig()
-  const sdk = await getSdk(config.BASE_URL as string, config.MNEMONIC)
+  const sdk = await getSdk(config.baseUrl, config.mnemonic)
 
   const imgArray = await getTokenImageUrls(sdk, {
-    collectionId: Number(config.PARENT_COLLECTION),
-    tokenId: Number(config.PARENT_TOKEN),
+    collectionId: config.parentCollection,
+    tokenId: config.parentToken,
   })
-  mergeImages(imgArray, Number(config.OFFSET), config.FILE_PATH as string)
+
+  mergeImages(imgArray, config.offset, config.filePath)
 }
 
 main().catch((error) => {
