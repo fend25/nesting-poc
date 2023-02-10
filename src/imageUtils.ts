@@ -1,5 +1,6 @@
 import mergeImg from 'merge-img'
-import fs from 'node:fs/promises'
+import * as fs from 'node:fs/promises'
+import {promisify} from 'node:util'
 
 export const mergeImages = async (
   imgArray: string[],
@@ -11,10 +12,9 @@ export const mergeImages = async (
     offset,
   })
 
-  // Save image as file
-  console.log(img.writeAsync)
+  const writeAsync = promisify(img.write.bind(img))
 
-  await img.writeAsync(outputFilePath) 
+  await writeAsync(outputFilePath)
 
   console.log(`Images were merged. The output is ${outputFilePath}`)
 

@@ -11,6 +11,9 @@ export const data = {
   },
   parentToken: {
     image: {
+      url: 'https://gateway.pinata.cloud/ipfs/QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/golova.png',
+    },
+    file: {
       ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/golova.png',
     },
     name: {

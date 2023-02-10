@@ -23,7 +23,8 @@ const createCollection = async (
     image: {
       urlTemplate: 'https://gateway.pinata.cloud/ipfs/{infix}',
     },
-    video: {
+    //@ts-ignore
+    file: {
       urlTemplate: 'https://gateway.pinata.cloud/ipfs/{infix}',
     },
     coverPicture: {
@@ -40,10 +41,15 @@ const createCollection = async (
         collectionAdmin: true,
       },
     },
+    tokenPropertyPermissions: [
+      {key: 'i.c', permission: {mutable: true, collectionAdmin: true, tokenOwner: false}},
+      {key: 'i.u', permission: {mutable: true, collectionAdmin: true, tokenOwner: false}},
+      {key: 'i.i', permission: {mutable: true, collectionAdmin: true, tokenOwner: false}},
+    ]
   })
 
   if (parsed?.collectionId) {
-    return sdk.collections.get({collectionId: parsed?.collectionId})
+    return await sdk.collections.get({collectionId: parsed?.collectionId})
   } else {
     throw error ? error : new Error('Error when creating a collection!')
   }
@@ -86,8 +92,8 @@ const nestTokens = async (sdk: Client, payload: NestTokenBody): Promise<void> =>
 
 async function main() {
   const config = getConfig()
-  const signer = await getSinger(config.MNEMONIC as string)
-  const sdk = await getSdk(config.BASE_URL as string, signer)
+  const signer = await getSinger(config.mnemonic)
+  const sdk = await getSdk(config.baseUrl, signer)
 
   //////////////////////////////////////
   // Create parent collection
@@ -99,8 +105,10 @@ async function main() {
   }
   const parentCollection = await createCollection(sdk, parentCollArgs)
 
-  if (parentCollection?.id)
-    console.log('The parent collection was created. Id: ', parentCollection.id)
+  console.log(
+   'The parent collection was created. Id: ', parentCollection.id,
+    `${config.baseUrl}/collections?collectionId=${parentCollection.id}`
+  )
 
   //////////////////////////////////////
   // Create child collection
@@ -110,9 +118,13 @@ async function main() {
     address: signer.getAddress(),
     ...data.childCollection,
   }
+
   const childCollection = await createCollection(sdk, childCollArgs)
 
-  console.log('The child collection was created. Id: ', childCollection?.id)
+  console.log(
+    'The child collection was created. Id: ', childCollection.id,
+    `${config.baseUrl}/collections?collectionId=${childCollection.id}`
+  )
 
   //////////////////////////////////////
   // Mint parent token
@@ -126,7 +138,8 @@ async function main() {
 
   const parentToken = await mintToken(sdk, parentTokenArgs)
   console.log(
-    `The parent token was minted. Id: ${parentToken.tokenId}, collection id: ${parentCollection.id}`
+    `The parent token was minted. Id: ${parentToken.tokenId}, collection id: ${parentCollection.id}`,
+    `${config.baseUrl}/tokens?collectionId=${parentCollection.id}&tokenId=${parentToken.tokenId}`
   )
 
   //////////////////////////////////////
@@ -140,6 +153,12 @@ async function main() {
   })
 
   console.log('The child tokens were minted: \r\n', childTokens)
+  childTokens.forEach((token) => {
+    console.log(
+      `Token id: ${token.tokenId}, collection id: ${childCollection.id}`,
+      `${config.baseUrl}/tokens?collectionId=${childCollection.id}&tokenId=${token.tokenId}`
+    )
+  })
 
   //////////////////////////////////////
   // Nest tokens
