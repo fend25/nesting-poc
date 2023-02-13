@@ -1,3 +1,4 @@
+import {COLLECTION_SCHEMA_NAME} from '@unique-nft/schemas'
 import {
   Client,
   CollectionInfoWithSchemaResponse,
@@ -9,9 +10,8 @@ import {
   TokenId,
   UniqueCollectionSchemaToCreateDto,
 } from '@unique-nft/sdk'
-import {getConfig, getSdk, getSinger} from './utils'
-import {COLLECTION_SCHEMA_NAME} from '@unique-nft/schemas'
 import {data} from './data'
+import {getConfig, getSdk, getSinger} from './utils'
 
 const createCollection = async (
   sdk: Client,
@@ -45,7 +45,7 @@ const createCollection = async (
       {key: 'i.c', permission: {mutable: true, collectionAdmin: true, tokenOwner: false}},
       {key: 'i.u', permission: {mutable: true, collectionAdmin: true, tokenOwner: false}},
       {key: 'i.i', permission: {mutable: true, collectionAdmin: true, tokenOwner: false}},
-    ]
+    ],
   })
 
   if (parsed?.collectionId) {
@@ -106,7 +106,8 @@ async function main() {
   const parentCollection = await createCollection(sdk, parentCollArgs)
 
   console.log(
-   'The parent collection was created. Id: ', parentCollection.id,
+    'The parent collection was created. Id: ',
+    parentCollection.id,
     `${config.baseUrl}/collections?collectionId=${parentCollection.id}`
   )
 
@@ -122,7 +123,8 @@ async function main() {
   const childCollection = await createCollection(sdk, childCollArgs)
 
   console.log(
-    'The child collection was created. Id: ', childCollection.id,
+    'The child collection was created. Id: ',
+    childCollection.id,
     `${config.baseUrl}/collections?collectionId=${childCollection.id}`
   )
 
