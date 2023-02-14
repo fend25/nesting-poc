@@ -21,24 +21,23 @@ const rerenderAndSaveImage = async () => {
   })
 
   const file = await mergeImages(imgArray, config.offset, `${config.imagesDir}/${config.fileName}`)
-  console.log(file)
 }
 
 app.use(async (ctx) => {
-  if (Date.now() - lastRenderTime > CACHE_TIME) {
-    await rerenderAndSaveImage()
-    console.log('merged!')
-    lastRenderTime = Date.now()
-    console.log(lastRenderTime)
-  }
+  console.log('Working ...')
 
   if (ctx.request.url === `/image/${config.parentCollection}/${config.parentToken}`) {
     const path = `${config.imagesDir}/${config.fileName}`
-    const src = fs.createReadStream(path)
+    if (Date.now() - lastRenderTime > CACHE_TIME) {
+      await rerenderAndSaveImage()
+      lastRenderTime = Date.now()
+    }
+    const stream = fs.createReadStream(path)
     ctx.response.set('content-type', 'image/png')
-    ctx.body = src
+    ctx.body = stream
   } else {
-    ctx.body = 'Hello World'
+    ctx.body =
+      'Server is running. The image is available at <server>:<port>/image/<parent-collection-id>/<parent-token-id>'
   }
 })
 
