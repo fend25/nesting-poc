@@ -88,10 +88,12 @@ const mintBulkTokens = async (
 program
   .option('-n, --network <string>', `network name: ${KNOWN_NETWORKS.join('|')}`)
   .option('-u, --imageUrlBase <string>', 'image url host: like "http://localhost:3000" or "https://workaholic.nft"')
+  .option('-o, --owner <string>', 'to which address create collections and mint NFTs')
 
 
 async function main() {
   program.parse()
+  const options = program.opts()
   const {network, imageUrlBase} = program.opts()
   if (!KNOWN_NETWORKS.includes(network)) {
     throw new Error(`Unknown network ${network}. Please use one of ${KNOWN_NETWORKS.join(', ')}`)
@@ -99,6 +101,8 @@ async function main() {
 
   const signer = await getSinger(getConfig().mnemonic)
   const sdk = SDKFactories[network as keyof typeof SDKFactories](signer)
+
+  const owner = Address.is.validAddressInAnyForm(options.owner) ? options.owner as string : signer.getAddress()
 
   //////////////////////////////////////
   // Create parent collection
@@ -182,6 +186,28 @@ async function main() {
       `${sdk.options.baseUrl}/tokens?collectionId=${childCollection.id}&tokenId=${token.tokenId}`
     )
   })
+
+  if (signer.getAddress() !== 'owner') {
+    console.log(`Transferring collections and parent token to ${owner}`)
+    await sdk.tokens.transfer.submitWaitResult({
+      address: signer.getAddress(),
+      collectionId: parentCollection.id,
+      tokenId: parentToken.tokenId,
+      to: owner,
+    })
+
+    await sdk.collections.transfer.submitWaitResult({
+      address: signer.getAddress(),
+      collectionId: parentCollection.id,
+      to: owner,
+    })
+
+    await sdk.collections.transfer.submitWaitResult({
+      address: signer.getAddress(),
+      collectionId: childCollection.id,
+      to: owner,
+    })
+  }
 }
 
 main().catch((error) => {

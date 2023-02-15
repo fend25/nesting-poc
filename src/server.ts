@@ -37,17 +37,18 @@ router.get(`/workaholic/:network/:collectionId/:tokenId`, async (ctx) => {
     return
   }
 
-  const sdk = SDKFactories[network as keyof typeof SDKFactories]()
-
   const path = `${config.imagesDir}/${network}-${collectionId}-${tokenId}.png`
 
   // Check if the image is cached
   // If not, render it and save it
   if ((!lastRenderTimes[path]) || (Date.now() - lastRenderTimes[path] > CACHE_TIME)) {
+    const sdk = SDKFactories[network as keyof typeof SDKFactories]()
+
     const imgArray = await getTokenImageUrls(sdk, {collectionId, tokenId})
     await mergeImages(imgArray, config.offset, path)
     lastRenderTimes[path] = Date.now()
   }
+  console.log(`Serving ${path}...`)
 
   const stream = fs.createReadStream(path)
   ctx.response.set('content-type', 'image/png')

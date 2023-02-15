@@ -9,7 +9,9 @@ export const getTokenImageUrls = async (
 
   console.log(`Getting parent token (${parentToken.collectionId}/${parentToken.tokenId}) image`)
   const token = await sdk.tokens.get(parentToken)
-  if (token.image.fullUrl) {
+  if ((token as any).file.fullUrl) {
+    imgArray.push((token as any).file.fullUrl)
+  } else if (token.image.fullUrl) {
     imgArray.push(token.image.fullUrl)
   }
 
