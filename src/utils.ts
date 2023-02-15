@@ -1,5 +1,5 @@
 import {KeyringAccount, KeyringProvider} from '@unique-nft/accounts/keyring'
-import {Client, Sdk} from '@unique-nft/sdk'
+import {Client, Sdk, Signer} from '@unique-nft/sdk'
 import * as dotenv from 'dotenv'
 
 export const getConfig = () => {
@@ -38,7 +38,7 @@ export const getConfig = () => {
     parentToken,
     offset,
     mnemonic: process.env.MNEMONIC,
-    host: process.env.HOST || '127.0.0.1',
+    host: process.env.HOST || 'localhost',
     port: !isNaN(port) ? port : 3000,
   }
 }
@@ -68,3 +68,12 @@ export const getSdk = async (
     return new Sdk({baseUrl, signer: signerOrMnemonic})
   }
 }
+
+export const SDKFactories = <const>{
+  opal: (signer?: Signer) => new Sdk({baseUrl: 'https://rest.unique.network/opal/v1', signer}),
+  quartz: (signer?: Signer) => new Sdk({baseUrl: 'https://rest.unique.network/quartz/v1', signer}),
+  unique: (signer?: Signer) => new Sdk({baseUrl: 'https://rest.unique.network/unique/v1', signer}),
+  rc: (signer?: Signer) => new Sdk({baseUrl: 'https://rest.dev.uniquenetwork.dev/v1', signer}),
+  uniqsu: (signer?: Signer) => new Sdk({baseUrl: 'https://rest.unq.uniq.su/v1', signer}),
+}
+export const KNOWN_NETWORKS = Object.keys(SDKFactories)

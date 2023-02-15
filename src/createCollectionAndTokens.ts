@@ -6,16 +6,22 @@ import {
   CreateMultipleTokensBody,
   CreateTokenBody,
   NestTokenBody,
+  Signer,
   TokenByIdResponse,
   TokenId,
   UniqueCollectionSchemaToCreateDto,
 } from '@unique-nft/sdk'
 import {data} from './data'
-import {getConfig, getSdk, getSinger} from './utils'
+import {getConfig, getSinger, KNOWN_NETWORKS, SDKFactories} from './utils'
+import {program} from 'commander'
+import {Address} from '@unique-nft/utils/address'
+
+type CreateCollectionFields = Pick<CreateCollectionBody, 'name' | 'description' | 'tokenPrefix'>
 
 const createCollection = async (
   sdk: Client,
-  collectionArgs: CreateCollectionBody
+  address: string,
+  collectionArgs: CreateCollectionFields
 ): Promise<CollectionInfoWithSchemaResponse> => {
   const collectionSchema: UniqueCollectionSchemaToCreateDto = {
     schemaName: COLLECTION_SCHEMA_NAME.unique,
@@ -34,6 +40,7 @@ const createCollection = async (
 
   const {parsed, error} = await sdk.collections.creation.submitWaitResult({
     ...collectionArgs,
+    address,
     schema: collectionSchema,
     permissions: {
       nesting: {
@@ -78,101 +85,103 @@ const mintBulkTokens = async (
   }
 }
 
-const nestTokens = async (sdk: Client, payload: NestTokenBody): Promise<void> => {
-  const {parsed, error} = await sdk.tokens.nest.submitWaitResult(payload)
+program
+  .option('-n, --network <string>', `network name: ${KNOWN_NETWORKS.join('|')}`)
+  .option('-u, --imageUrlBase <string>', 'image url host: like "http://localhost:3000" or "https://workaholic.nft"')
 
-  if (parsed) {
-    console.log(
-      `Token ${parsed.tokenId} from collection ${parsed.collectionId} was successfully nested`
-    )
-  } else {
-    throw error ? error : new Error('Error when nesting tokens!')
-  }
-}
 
 async function main() {
-  const config = getConfig()
-  const signer = await getSinger(config.mnemonic)
-  const sdk = await getSdk(config.baseUrl, signer)
+  program.parse()
+  const {network, imageUrlBase} = program.opts()
+  if (!KNOWN_NETWORKS.includes(network)) {
+    throw new Error(`Unknown network ${network}. Please use one of ${KNOWN_NETWORKS.join(', ')}`)
+  }
+
+  const signer = await getSinger(getConfig().mnemonic)
+  const sdk = SDKFactories[network as keyof typeof SDKFactories](signer)
 
   //////////////////////////////////////
   // Create parent collection
   //////////////////////////////////////
 
-  const parentCollArgs = {
-    address: signer.getAddress(),
-    ...data.parentCollection,
-  }
-  const parentCollection = await createCollection(sdk, parentCollArgs)
+  const parentCollection = await createCollection(sdk, signer.getAddress(), {
+    name: 'Parent collection',
+    description: 'Collection for nesting POC - parent',
+    tokenPrefix: 'PRNT',
+  })
 
   console.log(
-    'The parent collection was created. Id: ',
-    parentCollection.id,
-    `${config.baseUrl}/collections?collectionId=${parentCollection.id}`
+    `The parent collection was created. Id: ${parentCollection.id},` +
+    `${sdk.options.baseUrl}/collections?collectionId=${parentCollection.id}`
   )
 
   //////////////////////////////////////
   // Create child collection
   //////////////////////////////////////
 
-  const childCollArgs = {
-    address: signer.getAddress(),
-    ...data.childCollection,
-  }
-
-  const childCollection = await createCollection(sdk, childCollArgs)
+  const childCollection = await createCollection(sdk, signer.getAddress(), {
+    name: 'Child collection',
+    description: 'Collection for nesting POC - child',
+    tokenPrefix: 'CHLD',
+  })
 
   console.log(
-    'The child collection was created. Id: ',
-    childCollection.id,
-    `${config.baseUrl}/collections?collectionId=${childCollection.id}`
+    `The child collection was created. Id: ${childCollection.id},` +
+    `${sdk.options.baseUrl}/collections?collectionId=${childCollection.id}`
   )
 
   //////////////////////////////////////
   // Mint parent token
   //////////////////////////////////////
 
+  let parentTokenImageUrl = data.parentToken.image.url
+  if (imageUrlBase) {
+    const isValidUrl = imageUrlBase.startsWith('http://') || imageUrlBase.startsWith('https://')
+    if (isValidUrl) {
+      const lastTokenId = (await sdk.collections.lastTokenId({collectionId: parentCollection.id})).tokenId
+      parentTokenImageUrl = `${imageUrlBase}/workaholic/${network}/${parentCollection.id}/${lastTokenId + 1}`
+    }
+  }
+
   const parentTokenArgs = {
     address: signer.getAddress(),
     collectionId: parentCollection.id,
-    data: data.parentToken,
+    data: {
+      ...data.parentToken,
+      image: {
+        url: parentTokenImageUrl,
+      }
+    },
   }
 
   const parentToken = await mintToken(sdk, parentTokenArgs)
   console.log(
     `The parent token was minted. Id: ${parentToken.tokenId}, collection id: ${parentCollection.id}`,
-    `${config.baseUrl}/tokens?collectionId=${parentCollection.id}&tokenId=${parentToken.tokenId}`
+    `${sdk.options.baseUrl}/tokens?collectionId=${parentCollection.id}&tokenId=${parentToken.tokenId}`
   )
+  const parentTokenAddress = Address.nesting.idsToAddress(parentCollection.id, parentToken.tokenId)
 
-  //////////////////////////////////////
-  // Mint child tokens
-  //////////////////////////////////////
+  ///////////////////////////////////////////
+  // Mint child tokens and nest them at once
+  ///////////////////////////////////////////
 
   const childTokens = await mintBulkTokens(sdk, {
     address: signer.getAddress(),
     collectionId: childCollection.id,
-    tokens: [data.childToken1, data.childToken2, data.childToken3],
+    tokens: [
+      {...data.childToken1, owner: parentTokenAddress},
+      {...data.childToken2, owner: parentTokenAddress},
+      {...data.childToken3, owner: parentTokenAddress},
+    ]
   })
 
   console.log('The child tokens were minted: \r\n', childTokens)
   childTokens.forEach((token) => {
     console.log(
       `Token id: ${token.tokenId}, collection id: ${childCollection.id}`,
-      `${config.baseUrl}/tokens?collectionId=${childCollection.id}&tokenId=${token.tokenId}`
+      `${sdk.options.baseUrl}/tokens?collectionId=${childCollection.id}&tokenId=${token.tokenId}`
     )
   })
-
-  //////////////////////////////////////
-  // Nest tokens
-  //////////////////////////////////////
-
-  for (const token of childTokens) {
-    await nestTokens(sdk, {
-      address: signer.getAddress(),
-      parent: parentToken,
-      nested: token,
-    })
-  }
 }
 
 main().catch((error) => {
