@@ -6,9 +6,11 @@
   "author": "Yuriy Peshekhonov <yupeshekhonov@usetech.com>",
   "license": "MIT",
   "dependencies": {
+    "@koa/router": "^12.0.0",
     "@unique-nft/accounts": "^0.3.4",
     "@unique-nft/schemas": "^0.1.0",
     "@unique-nft/sdk": "^0.2.5",
+    "@unique-nft/utils": "^0.3.5",
     "dotenv": "^16.0.3",
     "jimp": "^0.22.4",
     "json5": "^2.2.3",
@@ -18,6 +20,7 @@
   },
   "devDependencies": {
     "@types/koa": "^2.13.5",
+    "@types/koa__router": "^12.0.0",
     "@types/merge-img": "^2.1.1",
     "tsx": "^3.12.3",
     "typescript": "^4.9.5"
