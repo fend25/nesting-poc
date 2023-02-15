@@ -6,6 +6,8 @@
   "author": "Yuriy Peshekhonov <yupeshekhonov@usetech.com>",
   "license": "MIT",
   "dependencies": {
+    "@koa/router": "^12.0.0",
+    "@types/koa__router": "^12.0.0",
     "@unique-nft/accounts": "^0.3.4",
     "@unique-nft/schemas": "^0.1.0",
     "@unique-nft/sdk": "^0.2.5",
