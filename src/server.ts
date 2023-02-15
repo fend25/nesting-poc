@@ -3,8 +3,7 @@ import Koa from 'koa'
 
 import * as fs from 'node:fs'
 import {getConfig, KNOWN_NETWORKS, SDKFactories} from './utils'
-import {getTokenImageUrls} from '.'
-import {mergeImages} from './imageUtils'
+import {getTokenImageUrls, mergeImages} from './imageUtils'
 import {Address} from '@unique-nft/utils/address'
 
 const config = getConfig()

@@ -5,39 +5,18 @@ import * as dotenv from 'dotenv'
 export const getConfig = () => {
   dotenv.config()
 
-  const parentCollection = parseInt(process.env.PARENT_COLLECTION || '', 10)
-  if (isNaN(parentCollection)) {
-    throw new Error('Empty or invalid parent collection number.')
-  }
-  const parentToken = parseInt(process.env.PARENT_TOKEN || '', 10)
-  if (isNaN(parentToken)) {
-    throw new Error('Empty or invalid parent token number.')
-  }
   const offset = parseInt(process.env.OFFSET || '', 10)
   if (isNaN(offset)) {
     throw new Error('Empty or invalid offset.')
   }
-  if (!process.env.MNEMONIC) {
-    throw new Error('Empty or invalid file path.')
-  }
-  if (!process.env.OUTPUT_FILENAME) {
-    throw new Error('Empty or invalid file name.')
-  }
   if (!process.env.IMAGES_DIR) {
     throw new Error('Empty or invalid folder.')
   }
-  if (!process.env.BASE_URL) {
-    throw new Error('Empty or invalid base url.')
-  }
   const port = parseInt(process.env.PORT || '3000', 10)
   return {
-    baseUrl: process.env.BASE_URL,
-    fileName: process.env.OUTPUT_FILENAME,
     imagesDir: process.env.IMAGES_DIR,
-    parentCollection,
-    parentToken,
     offset,
-    mnemonic: process.env.MNEMONIC,
+    mnemonic: process.env.MNEMONIC || '',
     host: process.env.HOST || 'localhost',
     port: !isNaN(port) ? port : 3000,
   }
