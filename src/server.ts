@@ -1,4 +1,5 @@
 //@ts-ignore
+import Router from '@koa/router'
 import Koa from 'koa'
 //@ts-ignore
 import Router from '@koa/router'
