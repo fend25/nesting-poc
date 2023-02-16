@@ -1,40 +1,50 @@
 # Sample project for nesting
 
-### Create collection and tokens
-
 The project allows creating two collections for nesting demo. Then, it mints several tokens in these collections.
 The main token will be in the first collection, all tokens that we are going to nest will be in the second collection.
 
 When the tokens are minted, we carry out nesting. We will nest all tokens from the second collection into the token in
 the first collection (see example below).
 
-To do this, you can run the following commands:
+![Example](/example.png 'This is how it works!')
+
+### Create collection and tokens
+
+To create collection and tokes, you need to run the `src/createCollectionAndTokens.ts` script. 
+
+The scripts accepts several command-line arguments:
+
+`-n (--network)` - string argument specifies which network will be used. You can use one of the following values that
+correspond to our networks - _opal_, _quartz_, _unique_, _rc_, _uniqsu_. Their RPCs can be found in the `utils.ts` file.
+
+`-u (--imageUrlBase)` - string argument that specifies the base url of the image (e.g. "http://localhost:3000").
+
+`-o (--owner)` - string argument that specifies to which address collections and NFTs will belong to.
+
+:warning: If the signer that you will use in the code is not the same account as specified in the `--owner` argument,
+the collections and NFTs will be transferred to the **owner** account anyway.
+
+Here are how you can run this script:
 
 ```bash:no-line-numbers
 npm install
-npx tsx src/createCollectionAndTokens.ts
+npx tsx src/createCollectionAndTokens.ts -n 'opal' -u 'http://localhost:3000' -o '5H5rJe3ixpPBozVkfGvv2vJtG27m2ovtK7WpQioLw71Bd5mu'
 yarn
-yarn tsx src/createCollectionAndTokens.ts
-```
-
-### Merge token images
-
-After the tokens are minted (or if they already existed), we can run the `index.ts` file to get the token images and then merge them.
-Please take a look at the screenshot below to learn how this should work:
-
-![Example](/images/example.png 'This is how it works!')
-
-```bash:no-line-numbers
-npm install
-npx tsx src/index.ts
-yarn
-yarn tsx src/index.ts
+yarn tsx src/createCollectionAndTokens.ts -n 'opal' -u 'http://localhost:3000' -o '5H5rJe3ixpPBozVkfGvv2vJtG27m2ovtK7WpQioLw71Bd5mu'
 ```
 
 ### Server
 
-The project provides the simple server. When it receives a request, the server gets the bundle defines in the config and merge
-the images. Then, the server provides the result image as output.
+The project provides the simple server. When it receives a request, the server gets the tokens bundle based on this request, 
+and merge all images (parent token image + all child token images). Then, the server provides the result image as output.
+
+The server accepts the requests by this pattern (of course anything can be changed in the source code): 
+
+`<base_url>/workaholic/:network/:collectionId/:tokenId`
+
+So, the real request example may be this: http://localhost:3000/workaholic/opal/355/1
+
+When the script mints the tokens, it sets the `file` property of our parent token to see to this URL.
 
 ```bash:no-line-numbers
 npm install
@@ -49,11 +59,10 @@ First of all, please rename the `.example.env` file to the `.env` file. And, pas
 
 Here are some details on other configuration:
 
-`BASE_URL` - the URL of the network with we are working. It could be changed to Unique or Quartz in future.  
-`PARENT_COLLECTION` and `PARENT_TOKEN` - parent collection id and parent token id.
-If you use the minting, then fill this value before running `index.ts`.
-`IMAGES_DIR` and `OUTPUT_FILENAME` - the file path and the file name. Their combination (`IMAGES_DIR`/`OUTPUT_FILENAME` ) will
-define where the result image will be saved.  
+`MNEMONIC` - the seed phrase for your account, that will be used to sign transactions.  
+`IMAGES_DIR` - the folder on the server where the images will be stored.  
 `OFFSET` - offset value for image merging. You may need to adjust this value for best results.
+`HOST` - the host address (e.g. "http://localhost:3000" or "https://workaholic.nft")
+`PORT` - the port where the service will be hosted. 
 
 Also, there is the `data.ts` file that contains data for creating collection and minting tokens. You can modify this data, as well.
