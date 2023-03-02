@@ -1,10 +1,10 @@
 import Router from '@koa/router'
 import Koa from 'koa'
 
+import { Address } from '@unique-nft/utils/address'
 import * as fs from 'node:fs'
-import {getConfig, KNOWN_NETWORKS, SDKFactories} from './utils'
-import {getTokenImageUrls, mergeImages} from './imageUtils'
-import {Address} from '@unique-nft/utils/address'
+import { getTokenImageUrls, mergeImages } from './imageUtils'
+import { getConfig, KNOWN_NETWORKS, SDKFactories } from './utils'
 
 const config = getConfig()
 
@@ -14,7 +14,7 @@ const router = new Router()
 const lastRenderTimes: Record<string, number> = {}
 const CACHE_TIME = 10 * 1000
 
-router.get(`/workaholic/:network/:collectionId/:tokenId`, async (ctx) => {
+router.get(`/pirate/:network/:collectionId/:tokenId`, async (ctx) => {
   const network: string = ctx.params.network || ''
   if (!KNOWN_NETWORKS.includes(network)) {
     ctx.body = `Unknown network ${network}. Please use one of ${KNOWN_NETWORKS.join(', ')}`

@@ -1,20 +1,18 @@
-import {COLLECTION_SCHEMA_NAME} from '@unique-nft/schemas'
+import { COLLECTION_SCHEMA_NAME } from '@unique-nft/schemas'
 import {
   Client,
   CollectionInfoWithSchemaResponse,
   CreateCollectionBody,
   CreateMultipleTokensBody,
   CreateTokenBody,
-  NestTokenBody,
-  Signer,
   TokenByIdResponse,
   TokenId,
-  UniqueCollectionSchemaToCreateDto,
+  UniqueCollectionSchemaToCreateDto
 } from '@unique-nft/sdk'
-import {data} from './data'
-import {getConfig, getSinger, KNOWN_NETWORKS, SDKFactories} from './utils'
-import {program} from 'commander'
-import {Address} from '@unique-nft/utils/address'
+import { Address } from '@unique-nft/utils/address'
+import { program } from 'commander'
+import { data } from './data'
+import { KNOWN_NETWORKS, SDKFactories, getConfig, getSinger } from './utils'
 
 type CreateCollectionFields = Pick<CreateCollectionBody, 'name' | 'description' | 'tokenPrefix'>
 
@@ -34,7 +32,7 @@ const createCollection = async (
       urlTemplate: 'https://gateway.pinata.cloud/ipfs/{infix}',
     },
     coverPicture: {
-      ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx',
+      ipfsCid: 'QmcuAd3P1vaTC3xCdARMzwEy1hJBwjcn6ArmwcNJgjyXFM',
     },
   }
 
@@ -105,29 +103,27 @@ async function main() {
   const owner = Address.is.validAddressInAnyForm(options.owner) ? options.owner as string : signer.getAddress()
 
   //////////////////////////////////////
-  // Create parent collection
+  // Create parent collections
   //////////////////////////////////////
 
-  const parentCollection = await createCollection(sdk, signer.getAddress(), {
-    name: 'Parent collection',
-    description: 'Collection for nesting POC - parent',
-    tokenPrefix: 'PRNT',
-  })
+  const backgroundCollection = await createCollection(sdk, signer.getAddress(), data.backgroundCollection)
 
   console.log(
-    `The parent collection was created. Id: ${parentCollection.id},` +
-    `${sdk.options.baseUrl}/collections?collectionId=${parentCollection.id}`
+    `The background collection was created. Id: ${backgroundCollection.id},` +
+    `${sdk.options.baseUrl}/collections?collectionId=${backgroundCollection.id}`
   )
 
+  const bodyCollection = await createCollection(sdk, signer.getAddress(), data.bodyCollection)
+
+  console.log(
+    `The body collection was created. Id: ${bodyCollection.id},` +
+    `${sdk.options.baseUrl}/collections?collectionId=${bodyCollection.id}`
+  )
   //////////////////////////////////////
   // Create child collection
   //////////////////////////////////////
 
-  const childCollection = await createCollection(sdk, signer.getAddress(), {
-    name: 'Child collection',
-    description: 'Collection for nesting POC - child',
-    tokenPrefix: 'CHLD',
-  })
+  const childCollection = await createCollection(sdk, signer.getAddress(), data.childCollection)
 
   console.log(
     `The child collection was created. Id: ${childCollection.id},` +
@@ -135,36 +131,88 @@ async function main() {
   )
 
   //////////////////////////////////////
-  // Mint parent token
+  // Mint parent tokens
   //////////////////////////////////////
 
-  let parentTokenImageUrl = data.parentToken.image.url
+  let backgroundTokenImageUrl = data.parentToken.image.url
   if (imageUrlBase) {
     const isValidUrl = imageUrlBase.startsWith('http://') || imageUrlBase.startsWith('https://')
     if (isValidUrl) {
-      const lastTokenId = (await sdk.collections.lastTokenId({collectionId: parentCollection.id})).tokenId
-      parentTokenImageUrl = `${imageUrlBase}/workaholic/${network}/${parentCollection.id}/${lastTokenId + 1}`
+      const lastTokenId = (await sdk.collections.lastTokenId({collectionId: backgroundCollection.id})).tokenId
+      backgroundTokenImageUrl = `${imageUrlBase}/pirate/${network}/${backgroundCollection.id}/${lastTokenId + 1}`
     }
   }
 
-  const parentTokenArgs = {
+  let bodyTokenImageUrl = data.mainToken.image.url
+  if (imageUrlBase) {
+    const isValidUrl = imageUrlBase.startsWith('http://') || imageUrlBase.startsWith('https://')
+    if (isValidUrl) {
+      const lastTokenId = (await sdk.collections.lastTokenId({collectionId: bodyCollection.id})).tokenId
+      bodyTokenImageUrl = `${imageUrlBase}/pirate/${network}/${bodyCollection.id}/${lastTokenId + 1}`
+    }
+  }
+
+  const backgroundTokenArgs = {
     address: signer.getAddress(),
-    collectionId: parentCollection.id,
+    collectionId: backgroundCollection.id,
     data: {
       ...data.parentToken,
       image: {
-        url: parentTokenImageUrl,
+        url: backgroundTokenImageUrl,
       }
     },
   }
 
-  const parentToken = await mintToken(sdk, parentTokenArgs)
+  const backgroundToken = await mintToken(sdk, backgroundTokenArgs)
   console.log(
-    `The parent token was minted. Id: ${parentToken.tokenId}, collection id: ${parentCollection.id}`,
-    `${sdk.options.baseUrl}/tokens?collectionId=${parentCollection.id}&tokenId=${parentToken.tokenId}`
+    `The background token was minted. Id: ${backgroundToken.tokenId}, collection id: ${backgroundCollection.id}`,
+    `${sdk.options.baseUrl}/tokens?collectionId=${backgroundCollection.id}&tokenId=${backgroundToken.tokenId}`
   )
-  const parentTokenAddress = Address.nesting.idsToAddress(parentCollection.id, parentToken.tokenId)
+  const backgroundTokenAddress = Address.nesting.idsToAddress(backgroundCollection.id, backgroundToken.tokenId)
 
+  const bodyTokenArgs = {
+    address: signer.getAddress(),
+    owner: backgroundTokenAddress,
+    collectionId: bodyCollection.id,
+    data: {
+      ...data.mainToken,
+      image: {
+        url: bodyTokenImageUrl,
+      }
+    },
+  }
+
+  const bodyToken = await mintToken(sdk, bodyTokenArgs)
+  console.log(
+    `The body token was minted. Id: ${bodyToken.tokenId}, collection id: ${bodyCollection.id}`,
+    `${sdk.options.baseUrl}/tokens?collectionId=${bodyCollection.id}&tokenId=${bodyToken.tokenId}`
+  )
+  const bodyTokenAddress = Address.nesting.idsToAddress(bodyCollection.id, bodyToken.tokenId)
+
+  console.log(bodyTokenAddress)
+  // nest body token to the background token
+ /*  const txNest = await sdk.tokens.nest.submitWaitResult({
+    address: signer.getAddress(),
+    parent: {
+      collectionId: backgroundCollection.id,
+      tokenId: backgroundToken.tokenId
+    },
+    nested: {
+      collectionId: bodyCollection.id,
+      tokenId: bodyToken.tokenId
+    }
+  })
+  console.log(
+    `Token ${txNest.parsed?.tokenId} from collection ${txNest.parsed?.collectionId} successfully nested`,
+  ); */
+  /* const nestBody = await sdk.tokens.transfer.submitWaitResult({
+    address: signer.getAddress(),
+    to: backgroundTokenAddress,
+    collectionId: bodyCollection.id,
+    tokenId: bodyToken.tokenId,
+  }); */
+
+  
   ///////////////////////////////////////////
   // Mint child tokens and nest them at once
   ///////////////////////////////////////////
@@ -173,9 +221,9 @@ async function main() {
     address: signer.getAddress(),
     collectionId: childCollection.id,
     tokens: [
-      {...data.childToken1, owner: parentTokenAddress},
-      {...data.childToken2, owner: parentTokenAddress},
-      {...data.childToken3, owner: parentTokenAddress},
+      {...data.childToken1, owner: bodyTokenAddress},
+      {...data.childToken2, owner: bodyTokenAddress},
+      {...data.childToken3, owner: bodyTokenAddress},
     ]
   })
 
@@ -187,18 +235,28 @@ async function main() {
     )
   })
 
-  if (signer.getAddress() !== 'owner') {
-    console.log(`Transferring collections and parent token to ${owner}`)
+  ///////////////////////////////////////////
+  // Check the owner and transfer collections and tokens if needed 
+  ///////////////////////////////////////////
+
+  if (signer.getAddress() !== 'owner') { 
+    console.log(`Transferring all collections and the top level token to ${owner}`)
     await sdk.tokens.transfer.submitWaitResult({
       address: signer.getAddress(),
-      collectionId: parentCollection.id,
-      tokenId: parentToken.tokenId,
+      collectionId: backgroundCollection.id,
+      tokenId: backgroundToken.tokenId,
       to: owner,
     })
 
     await sdk.collections.transfer.submitWaitResult({
       address: signer.getAddress(),
-      collectionId: parentCollection.id,
+      collectionId: backgroundCollection.id,
+      to: owner,
+    })
+
+    await sdk.collections.transfer.submitWaitResult({
+      address: signer.getAddress(),
+      collectionId: bodyCollection.id,
       to: owner,
     })
 

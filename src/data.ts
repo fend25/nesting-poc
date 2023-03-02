@@ -1,51 +1,70 @@
 export const data = {
-  parentCollection: {
-    name: 'Parent collection',
-    description: 'Collection for nesting POC - parent',
-    tokenPrefix: 'PRT',
+  backgroundCollection: {
+    name: 'Background collection',
+    description: 'Collection for nesting POC - background',
+    tokenPrefix: 'BGR',
+  },
+  bodyCollection: {
+    name: 'Body collection',
+    description: 'Collection for nesting POC - body',
+    tokenPrefix: 'BOD',
   },
   childCollection: {
-    name: 'Child collection',
-    description: 'Collection for nesting POC - child',
-    tokenPrefix: 'CLD',
+    name: 'Items collection',
+    description: 'Collection for nesting POC - items',
+    tokenPrefix: 'ITM',
   },
   parentToken: {
     image: {
-      url: 'https://gateway.pinata.cloud/ipfs/QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/golova.png',
+      url: 'https://gateway.pinata.cloud/ipfs/QmcuAd3P1vaTC3xCdARMzwEy1hJBwjcn6ArmwcNJgjyXFM/pirate_bg.png',
     },
     file: {
-      ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/golova.png',
+      ipfsCid: 'QmcuAd3P1vaTC3xCdARMzwEy1hJBwjcn6ArmwcNJgjyXFM/pirate_bg.png',
     },
     name: {
-      _: 'Head',
+      _: 'Background',
     },
     description: {
       _: 'Head token for nesting',
     },
   },
+  mainToken: {
+    image: {
+      url: 'https://gateway.pinata.cloud/ipfs/QmcuAd3P1vaTC3xCdARMzwEy1hJBwjcn6ArmwcNJgjyXFM/pirate_body.png',
+    },
+    file: {
+      ipfsCid: 'QmcuAd3P1vaTC3xCdARMzwEy1hJBwjcn6ArmwcNJgjyXFM/pirate_body.png',
+    },
+    name: {
+      _: 'Body',
+    },
+    description: {
+      _: 'Body token for pirate',
+    },
+  },
   childToken1: {
     data: {
       image: {
-        ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/brovki.png',
+        ipfsCid: 'QmcuAd3P1vaTC3xCdARMzwEy1hJBwjcn6ArmwcNJgjyXFM/pirate_hat.png',
       },
       name: {
-        _: 'Eyebrows',
+        _: 'Hat',
       },
       description: {
-        _: 'Eyebrows token for nesting',
+        _: 'Hat token for pirate',
       },
     },
   },
   childToken2: {
     data: {
       image: {
-        ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/pricheska.png',
+        ipfsCid: 'QmcuAd3P1vaTC3xCdARMzwEy1hJBwjcn6ArmwcNJgjyXFM/pirate_suit.png',
       },
       name: {
-        _: 'Hair',
+        _: 'Suit',
       },
       description: {
-        _: 'Hair token for nesting',
+        _: 'Suit token for pirate',
       },
     },
   },
@@ -53,13 +72,13 @@ export const data = {
   childToken3: {
     data: {
       image: {
-        ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/boroda.png',
+        ipfsCid: 'QmcuAd3P1vaTC3xCdARMzwEy1hJBwjcn6ArmwcNJgjyXFM/hook.png',
       },
       name: {
-        _: 'Beard',
+        _: 'Hook',
       },
       description: {
-        _: 'Beard token for nesting',
+        _: 'Hook token for pirate',
       },
     },
   },
