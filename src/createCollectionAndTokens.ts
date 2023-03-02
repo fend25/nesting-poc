@@ -172,7 +172,7 @@ async function main() {
 
   const bodyTokenArgs = {
     address: signer.getAddress(),
-    owner: backgroundTokenAddress,
+    // owner: backgroundTokenAddress,
     collectionId: bodyCollection.id,
     data: {
       ...data.mainToken,
@@ -188,30 +188,7 @@ async function main() {
     `${sdk.options.baseUrl}/tokens?collectionId=${bodyCollection.id}&tokenId=${bodyToken.tokenId}`
   )
   const bodyTokenAddress = Address.nesting.idsToAddress(bodyCollection.id, bodyToken.tokenId)
-
-  console.log(bodyTokenAddress)
-  // nest body token to the background token
- /*  const txNest = await sdk.tokens.nest.submitWaitResult({
-    address: signer.getAddress(),
-    parent: {
-      collectionId: backgroundCollection.id,
-      tokenId: backgroundToken.tokenId
-    },
-    nested: {
-      collectionId: bodyCollection.id,
-      tokenId: bodyToken.tokenId
-    }
-  })
-  console.log(
-    `Token ${txNest.parsed?.tokenId} from collection ${txNest.parsed?.collectionId} successfully nested`,
-  ); */
-  /* const nestBody = await sdk.tokens.transfer.submitWaitResult({
-    address: signer.getAddress(),
-    to: backgroundTokenAddress,
-    collectionId: bodyCollection.id,
-    tokenId: bodyToken.tokenId,
-  }); */
-
+  
   
   ///////////////////////////////////////////
   // Mint child tokens and nest them at once
