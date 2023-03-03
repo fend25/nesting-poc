@@ -1,21 +1,16 @@
-import {KeyringAccount, KeyringProvider} from '@unique-nft/accounts/keyring'
-import {Client, Sdk, Signer} from '@unique-nft/sdk'
+import { KeyringAccount, KeyringProvider } from '@unique-nft/accounts/keyring'
+import { Client, Sdk, Signer } from '@unique-nft/sdk'
 import * as dotenv from 'dotenv'
 
 export const getConfig = () => {
   dotenv.config()
 
-  const offset = parseInt(process.env.OFFSET || '', 10)
-  if (isNaN(offset)) {
-    throw new Error('Empty or invalid offset.')
-  }
   if (!process.env.IMAGES_DIR) {
     throw new Error('Empty or invalid folder.')
   }
   const port = parseInt(process.env.PORT || '3000', 10)
   return {
     imagesDir: process.env.IMAGES_DIR,
-    offset,
     mnemonic: process.env.MNEMONIC || '',
     host: process.env.HOST || 'localhost',
     port: !isNaN(port) ? port : 3000,
@@ -55,4 +50,10 @@ export const SDKFactories = <const>{
   rc: (signer?: Signer) => new Sdk({baseUrl: 'https://rest.dev.uniquenetwork.dev/v1', signer}),
   uniqsu: (signer?: Signer) => new Sdk({baseUrl: 'https://rest.unq.uniq.su/v1', signer}),
 }
+
 export const KNOWN_NETWORKS = Object.keys(SDKFactories)
+
+export enum KNOWN_AVATARS {
+  Workaholic = 'workaholic', 
+  Pirate = 'pirate',
+}
