@@ -1,5 +1,5 @@
+import type { Client, TokenIdQuery } from '@unique-nft/sdk'
 import mergeImg from 'merge-img'
-import type {Client, TokenIdQuery} from '@unique-nft/sdk'
 
 export const getTokenImageUrls = async (
   sdk: Client,
@@ -19,14 +19,17 @@ export const getTokenImageUrls = async (
     `Getting bundle tokens image URLs for ${parentToken.collectionId}/${parentToken.tokenId}`
   )
   const bundle = await sdk.tokens.getBundle(parentToken)
-  bundle.nestingChildTokens.forEach((token) => {
+  bundle.nestingChildTokens.forEach(async (token) => {
     imgArray.push((token as any).image.fullUrl)
+    // get bundle for token
+    const childBundle = await sdk.tokens.getBundle(token)
+    childBundle.nestingChildTokens.forEach((childToken) => {
+      imgArray.push((childToken as any).image.fullUrl)
+    })
   })
 
   return imgArray
 }
-
-
 
 export const mergeImages = async (
   imgArray: string[],
