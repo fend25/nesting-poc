@@ -172,7 +172,7 @@ async function main() {
 
   const bodyTokenArgs = {
     address: signer.getAddress(),
-    // owner: backgroundTokenAddress,
+    owner: backgroundTokenAddress,
     collectionId: bodyCollection.id,
     data: {
       ...data.mainToken,
