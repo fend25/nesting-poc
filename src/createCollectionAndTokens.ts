@@ -77,11 +77,7 @@ const mintBulkTokens = async (
   sdk: Client,
   payload: CreateMultipleTokensBody
 ): Promise<TokenId[]> => {
-  console.log('start bulk mint')
-  console.log(payload.tokens.length)
-  console.dir(payload.tokens)
   const {parsed, error} = await sdk.tokens.createMultiple.submitWaitResult(payload)
-  console.log('bulk mint passed')
   if (parsed) {
     return parsed
   } else {
@@ -89,11 +85,16 @@ const mintBulkTokens = async (
   }
 }
 
-const mintBundle = async (sdk: Client, signer: KeyringAccount, data: IBundleData, options: OptionValues): Promise<void> => {
+const mintBundle = async (
+  sdk: Client,
+  signer: KeyringAccount,
+  data: IBundleData,
+  options: OptionValues
+): Promise<void> => {
   const owner = Address.is.validAddressInAnyForm(options.owner)
     ? (options.owner as string)
     : signer.getAddress()
-  
+
   //////////////////////////////////////
   // Create parent collection
   //////////////////////////////////////
@@ -110,8 +111,8 @@ const mintBundle = async (sdk: Client, signer: KeyringAccount, data: IBundleData
       `${sdk.options.baseUrl}/collections?collectionId=${parentCollection.id}`
   )
 
-  // If we have the second level parent collection, then create it. 
-  // If there is no such collection, just skip 
+  // If we have the second level parent collection, then create it.
+  // If there is no such collection, just skip
   let secondParentCollection = null
   if (data.secondParentCollection) {
     secondParentCollection = await createCollection(
@@ -120,7 +121,7 @@ const mintBundle = async (sdk: Client, signer: KeyringAccount, data: IBundleData
       data.secondParentCollection,
       data.secondParentCollection.coverPictureIpfsCid
     )
-  
+
     console.log(
       `The second layer parent collection was created. Id: ${secondParentCollection.id},` +
         `${sdk.options.baseUrl}/collections?collectionId=${secondParentCollection.id}`
@@ -170,9 +171,13 @@ const mintBundle = async (sdk: Client, signer: KeyringAccount, data: IBundleData
   // If we have second layer parent collection, then mint tokens in it
   let secondParentTokenAddress = ''
   if (data.secondParentCollection && data.secondParentToken && secondParentCollection) {
-
     let secondParentTokenImageUrl = data.secondParentToken.image.url
-    secondParentTokenImageUrl = await isValidImageURL(sdk, options, secondParentCollection, secondParentTokenImageUrl)
+    secondParentTokenImageUrl = await isValidImageURL(
+      sdk,
+      options,
+      secondParentCollection,
+      secondParentTokenImageUrl
+    )
 
     const secondParentTokenArgs = {
       address: signer.getAddress(),
@@ -185,9 +190,12 @@ const mintBundle = async (sdk: Client, signer: KeyringAccount, data: IBundleData
         },
       },
     }
-  
+
     const secondParentToken = await mintToken(sdk, secondParentTokenArgs)
-    secondParentTokenAddress = Address.nesting.idsToAddress(secondParentCollection.id, secondParentToken.tokenId)
+    secondParentTokenAddress = Address.nesting.idsToAddress(
+      secondParentCollection.id,
+      secondParentToken.tokenId
+    )
     console.log(
       `The second layer parent token was minted. Id: ${secondParentToken.tokenId}, collection id: ${secondParentCollection.id}`,
       `${sdk.options.baseUrl}/tokens?collectionId=${secondParentCollection.id}&tokenId=${secondParentToken.tokenId}`
@@ -198,50 +206,69 @@ const mintBundle = async (sdk: Client, signer: KeyringAccount, data: IBundleData
   // Mint child tokens and nest them at once
   ///////////////////////////////////////////
 
-  const currentParentAddress = secondParentTokenAddress ? secondParentTokenAddress : parentTokenAddress
-  const childTokensData = data.childTokens.map(token => 
-    ({...token, owner: currentParentAddress })
-  ) 
+  const currentParentAddress = secondParentTokenAddress
+    ? secondParentTokenAddress
+    : parentTokenAddress
+  const childTokensData = data.childTokens.map((token) => ({...token, owner: currentParentAddress}))
 
-  console.log(childTokensData)
-
-  const childTokens = await mintBulkTokens(sdk, {
-    address: signer.getAddress(),
-    collectionId: childCollection.id,
-    tokens: childTokensData,
-  })           
-
-  console.log('The child tokens were minted: \r\n', childTokens)
-  childTokens.forEach((token) => {
+  for (const childToken of childTokensData) {
+    const minted = await mintToken(sdk, {
+      ...childToken,
+      address: signer.getAddress(),
+      collectionId: childCollection.id,
+    })
     console.log(
-      `Token id: ${token.tokenId}, collection id: ${childCollection.id}`,
-      `${sdk.options.baseUrl}/tokens?collectionId=${childCollection.id}&tokenId=${token.tokenId}`
+      `Token id: ${minted.tokenId}, collection id: ${childCollection.id}`,
+      `${sdk.options.baseUrl}/tokens?collectionId=${childCollection.id}&tokenId=${minted.tokenId}`
     )
-  })
+  }
 
   ///////////////////////////////////////////
   // Check the owner and transfer collections and tokens if needed
   ///////////////////////////////////////////
 
-  secondParentCollection ? 
-  await transferCollections(sdk, signer, owner, parentToken, parentCollection, childCollection, secondParentCollection) :
-  await transferCollections(sdk, signer, owner, parentToken, parentCollection, childCollection)
+  secondParentCollection
+    ? await transferCollections(
+        sdk,
+        signer,
+        owner,
+        parentToken,
+        parentCollection,
+        childCollection,
+        secondParentCollection
+      )
+    : await transferCollections(sdk, signer, owner, parentToken, parentCollection, childCollection)
 }
 
-async function isValidImageURL(sdk: Client, options: OptionValues, parentCollection: CollectionInfoWithSchemaResponse, parentTokenImageUrl: string) {
+async function isValidImageURL(
+  sdk: Client,
+  options: OptionValues,
+  parentCollection: CollectionInfoWithSchemaResponse,
+  parentTokenImageUrl: string
+) {
   if (options.imageUrlBase) {
-    const isValidUrl = options.imageUrlBase.startsWith('http://') || options.imageUrlBase.startsWith('https://')
+    const isValidUrl =
+      options.imageUrlBase.startsWith('http://') || options.imageUrlBase.startsWith('https://')
     if (isValidUrl) {
-      const lastTokenId = (await sdk.collections.lastTokenId({ collectionId: parentCollection.id }))
+      const lastTokenId = (await sdk.collections.lastTokenId({collectionId: parentCollection.id}))
         .tokenId
-      parentTokenImageUrl = `${options.imageUrlBase}/${options.avatar}/${options.network}/${ 
-        parentCollection.id}/${lastTokenId + 1}`
+      parentTokenImageUrl = `${options.imageUrlBase}/${options.avatar}/${options.network}/${
+        parentCollection.id
+      }/${lastTokenId + 1}`
     }
   }
   return parentTokenImageUrl
 }
 
-async function transferCollections(sdk: Client, signer: KeyringAccount, owner: string, parentToken: TokenByIdResponse, parentCollection: CollectionInfoWithSchemaResponse, childCollection: CollectionInfoWithSchemaResponse, secondParentCollection?: CollectionInfoWithSchemaResponse,) {
+async function transferCollections(
+  sdk: Client,
+  signer: KeyringAccount,
+  owner: string,
+  parentToken: TokenByIdResponse,
+  parentCollection: CollectionInfoWithSchemaResponse,
+  childCollection: CollectionInfoWithSchemaResponse,
+  secondParentCollection?: CollectionInfoWithSchemaResponse
+) {
   if (signer.getAddress() !== owner) {
     console.log(`Transferring all collections and the top level token to ${owner}`)
     await sdk.tokens.transfer.submitWaitResult({
@@ -294,9 +321,9 @@ async function main() {
   const sdk = SDKFactories[network as keyof typeof SDKFactories](signer)
 
   if (avatar == 'workaholic') {
-    mintBundle(sdk, signer, workaholicData , options)
+    mintBundle(sdk, signer, workaholicData, options)
   } else if (avatar == 'pirate') {
-    mintBundle(sdk, signer, pirateData ,options)
+    mintBundle(sdk, signer, pirateData, options)
   } else {
     console.error('Unsupported avatar. Please use: ', Object.values(KNOWN_AVATARS))
   }
