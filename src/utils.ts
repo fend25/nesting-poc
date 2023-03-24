@@ -52,8 +52,3 @@ export const SDKFactories = <const>{
 }
 
 export const KNOWN_NETWORKS = Object.keys(SDKFactories)
-
-export enum KNOWN_AVATARS {
-  Workaholic = 'workaholic', 
-  Pirate = 'pirate',
-}
