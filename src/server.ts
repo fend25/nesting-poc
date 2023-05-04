@@ -1,9 +1,9 @@
 import Router from '@koa/router'
-import { Address } from '@unique-nft/utils/address'
+import {Address} from '@unique-nft/utils/address'
 import Koa from 'koa'
 import * as fs from 'node:fs'
-import { getTokenComponents, composeImage, createImagePath } from './imageUtils'
-import { KnownAvatar, KNOWN_NETWORKS, SDKFactories, getConfig } from './utils'
+import {getTokenComponents, composeImage, createImagePath} from './imageUtils'
+import {KnownAvatar, KNOWN_NETWORKS, SDKFactories, getConfig} from './utils'
 
 const config = getConfig()
 
@@ -55,23 +55,30 @@ router.get(`/:avatar/:network/:collectionId/:tokenId`, async (ctx) => {
     return
   }
 
-  // Check if the image is cached
-  // If not, render it and save it
-  if (!lastRenderTimes[path] || Date.now() - lastRenderTimes[path] > CACHE_TIME) {
-    // Initialize SDK
-    const sdk = SDKFactories[network as keyof typeof SDKFactories]()
+  try {
+    // Check if the image is cached
+    // If not, render it and save it
+    if (!lastRenderTimes[path] || Date.now() - lastRenderTimes[path] > CACHE_TIME) {
+      // Initialize SDK
+      const sdk = SDKFactories[network as keyof typeof SDKFactories]()
 
-    // Collect image URLs from all tokens in the bundle
-    const tokenArray = await getTokenComponents(sdk, {collectionId, tokenId})
-    // Compose and save the image from those of all tokens in the bundle
-    await composeImage(tokenArray, avatar as KnownAvatar, path)
-    lastRenderTimes[path] = Date.now()
+      // Collect image URLs from all tokens in the bundle
+      const tokenArray = await getTokenComponents(sdk, {collectionId, tokenId})
+      // Compose and save the image from those of all tokens in the bundle
+      await composeImage(tokenArray, avatar as KnownAvatar, path)
+      lastRenderTimes[path] = Date.now()
+    }
+    console.log(`Serving ${path}...`)
+
+    const stream = fs.createReadStream(path)
+    ctx.response.set('content-type', 'image/png')
+    ctx.body = stream
+  } catch (err: any) {
+    console.error(err)
+    ctx.status = 500
+    ctx.body = err.message
+    return
   }
-  console.log(`Serving ${path}...`)
-
-  const stream = fs.createReadStream(path)
-  ctx.response.set('content-type', 'image/png')
-  ctx.body = stream
 })
 
 app
