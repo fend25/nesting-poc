@@ -159,3 +159,73 @@ export const pirateData: IBundleData = {
     },
   ],
 }
+
+export const mutantData: IBundleData = {
+  parentCollection: {
+    name: 'Mutant collection',
+    description: 'Collection for dynamic nesting POC - face',
+    tokenPrefix: 'MUT',
+    coverPictureIpfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx',
+  },
+  childCollection: {
+    name: 'Mutant features collection',
+    description: 'Collection for dynamic nesting POC - features',
+    tokenPrefix: 'MFT',
+    coverPictureIpfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx',
+  },
+  parentToken: {
+    image: {
+      url: 'https://gateway.pinata.cloud/ipfs/QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/golova.png',
+    },
+    file: {
+      ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/golova.png',
+    },
+    name: {
+      _: 'Head',
+    },
+    description: {
+      _: 'Head token for nesting',
+    },
+  },
+  childTokens: [
+    {
+      data: {
+        image: {
+          ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/brovki.png',
+        },
+        name: {
+          _: 'Eyebrows',
+        },
+        description: {
+          _: 'Eyebrows token for nesting',
+        },
+      },
+    },
+    {
+      data: {
+        image: {
+          ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/pricheska.png',
+        },
+        name: {
+          _: 'Hair',
+        },
+        description: {
+          _: 'Hair token for nesting',
+        },
+      },
+    },
+    {
+      data: {
+        image: {
+          ipfsCid: 'QmdrDwzEYhTMZ5xCksaTaDQdzVewT9YxxpvaMWLtQgvTvx/boroda.png',
+        },
+        name: {
+          _: 'Beard',
+        },
+        description: {
+          _: 'Beard token for nesting',
+        },
+      },
+    },
+  ],
+}

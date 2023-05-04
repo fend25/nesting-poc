@@ -13,8 +13,7 @@ import {
 import { Address } from '@unique-nft/utils/address'
 import { OptionValues, program } from 'commander'
 import { IBundleData } from '../types/bundle'
-import { pirateData, workaholicData } from './data'
-import { KNOWN_AVATARS, KNOWN_NETWORKS, SDKFactories, getConfig, getSinger } from './utils'
+import { KnownAvatar, KNOWN_NETWORKS, SDKFactories, getConfig, getSigner } from './utils'
 
 type CreateCollectionFields = Pick<CreateCollectionBody, 'name' | 'description' | 'tokenPrefix'>
 
@@ -53,6 +52,7 @@ const createCollection = async (
       {key: 'i.c', permission: {mutable: true, collectionAdmin: true, tokenOwner: false}},
       {key: 'i.u', permission: {mutable: true, collectionAdmin: true, tokenOwner: false}},
       {key: 'i.i', permission: {mutable: true, collectionAdmin: true, tokenOwner: false}},
+      {key: 'mutator', permission: {mutable: true, collectionAdmin: true, tokenOwner: true}},
     ],
   })
 
@@ -307,7 +307,7 @@ program
     'image url host: like "http://localhost:3000" or "https://workaholic.nft"'
   )
   .option('-o, --owner <string>', 'to which address create collections and mint NFTs')
-  .option('-a, --avatar <string>', `which avatar will be minted: ${Object.values(KNOWN_AVATARS)}`)
+  .option('-a, --avatar <string>', `which avatar will be minted: ${Object.values(KnownAvatar)}`)
 
 async function main() {
   program.parse()
@@ -317,16 +317,10 @@ async function main() {
     throw new Error(`Unknown network ${network}. Please use one of ${KNOWN_NETWORKS.join(', ')}`)
   }
 
-  const signer = await getSinger(getConfig().mnemonic)
+  const signer = await getSigner(getConfig().mnemonic)
   const sdk = SDKFactories[network as keyof typeof SDKFactories](signer)
 
-  if (avatar == 'workaholic') {
-    mintBundle(sdk, signer, workaholicData, options)
-  } else if (avatar == 'pirate') {
-    mintBundle(sdk, signer, pirateData, options)
-  } else {
-    console.error('Unsupported avatar. Please use: ', Object.values(KNOWN_AVATARS))
-  }
+  mintBundle(sdk, signer, KnownAvatar.getMintingData(avatar), options)
 }
 
 main().catch((error) => {
