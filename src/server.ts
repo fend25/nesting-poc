@@ -2,8 +2,8 @@ import Router from '@koa/router'
 import { Address } from '@unique-nft/utils/address'
 import Koa from 'koa'
 import * as fs from 'node:fs'
-import { getTokenImageUrls, mergeImages } from './imageUtils'
-import { KNOWN_AVATARS, KNOWN_NETWORKS, SDKFactories, getConfig } from './utils'
+import { getTokenComponents, composeImage, createImagePath } from './imageUtils'
+import { KnownAvatar, KNOWN_NETWORKS, SDKFactories, getConfig } from './utils'
 
 const config = getConfig()
 
@@ -11,23 +11,16 @@ const app = new Koa()
 const router = new Router()
 
 const lastRenderTimes: Record<string, number> = {}
-const CACHE_TIME = 10 * 1000
-let offset = 0
+// 3 seconds
+const CACHE_TIME = 3 * 1000
 
 router.get(`/:avatar/:network/:collectionId/:tokenId`, async (ctx) => {
+  // Check the correctness of and transform every incoming parameter
   const avatar: string = ctx.params.avatar || ''
-  if (!Object.values(KNOWN_AVATARS).includes(avatar as any)) {
-    ctx.body = `Unknown avatar (${avatar}). Please use one of [${Object.values(KNOWN_AVATARS)}]`
+  if (!Object.values(KnownAvatar).includes(avatar as any)) {
+    ctx.body = `Unknown avatar (${avatar}). Please use one of [${Object.values(KnownAvatar)}]`
     ctx.status = 400
     return
-  }
-  switch (avatar) {
-    case KNOWN_AVATARS.Workaholic:
-      offset = -850
-      break
-    case KNOWN_AVATARS.Pirate:
-      offset = -1024
-      break
   }
 
   const network: string = ctx.params.network || ''
@@ -52,11 +45,10 @@ router.get(`/:avatar/:network/:collectionId/:tokenId`, async (ctx) => {
     return
   }
 
-  const path = `${config.imagesDir}/${network}-${collectionId}-${tokenId}.png`
+  // Create the path to which the image will be stored
+  let path = '';
   try {
-    if (!fs.existsSync(config.imagesDir)) {
-      fs.mkdirSync(config.imagesDir)
-    }
+    path = createImagePath(config, `${network}-${collectionId}-${tokenId}.png`)
   } catch (err) {
     console.error(err)
     ctx.status = 400
@@ -66,10 +58,13 @@ router.get(`/:avatar/:network/:collectionId/:tokenId`, async (ctx) => {
   // Check if the image is cached
   // If not, render it and save it
   if (!lastRenderTimes[path] || Date.now() - lastRenderTimes[path] > CACHE_TIME) {
+    // Initialize SDK
     const sdk = SDKFactories[network as keyof typeof SDKFactories]()
 
-    const imgArray = await getTokenImageUrls(sdk, {collectionId, tokenId})
-    await mergeImages(imgArray, offset, path)
+    // Collect image URLs from all tokens in the bundle
+    const tokenArray = await getTokenComponents(sdk, {collectionId, tokenId})
+    // Compose and save the image from those of all tokens in the bundle
+    await composeImage(tokenArray, avatar as KnownAvatar, path)
     lastRenderTimes[path] = Date.now()
   }
   console.log(`Serving ${path}...`)

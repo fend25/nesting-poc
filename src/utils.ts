@@ -1,8 +1,11 @@
 import { KeyringAccount, KeyringProvider } from '@unique-nft/accounts/keyring'
 import { Client, Sdk, Signer } from '@unique-nft/sdk'
 import * as dotenv from 'dotenv'
+import { IBundleData } from '../types/bundle'
+import { Config } from '../types/config'
+import { mutantData, pirateData, workaholicData } from './data'
 
-export const getConfig = () => {
+export const getConfig = (): Config => {
   dotenv.config()
 
   if (!process.env.IMAGES_DIR) {
@@ -17,7 +20,7 @@ export const getConfig = () => {
   }
 }
 
-export const getSinger = async (mnemonic: string): Promise<KeyringAccount> => {
+export const getSigner = async (mnemonic: string): Promise<KeyringAccount> => {
   const signer = await KeyringProvider.fromMnemonic(mnemonic)
   if (signer) {
     return signer
@@ -36,7 +39,7 @@ export const getSdk = async (
   }
 
   if (typeof signerOrMnemonic === 'string') {
-    const signer = await getSinger(signerOrMnemonic)
+    const signer = await getSigner(signerOrMnemonic)
     return new Sdk({baseUrl, signer})
   } else {
     return new Sdk({baseUrl, signer: signerOrMnemonic})
@@ -53,7 +56,25 @@ export const SDKFactories = <const>{
 
 export const KNOWN_NETWORKS = Object.keys(SDKFactories)
 
-export enum KNOWN_AVATARS {
+export enum KnownAvatar {
   Workaholic = 'workaholic', 
   Pirate = 'pirate',
+  Mutant = 'mutant',
 }
+
+export namespace KnownAvatar {
+  export function getMintingData(avatar: string | KnownAvatar): IBundleData {
+    switch (avatar as KnownAvatar) {
+      case KnownAvatar.Workaholic:
+        return workaholicData
+      case KnownAvatar.Pirate:
+        return pirateData
+      case KnownAvatar.Mutant:
+        return mutantData
+      default:
+        throw new Error(`Unsupported avatar. Please use: ${Object.values(KnownAvatar)}`)
+    }
+  }
+}
+
+export { Config }

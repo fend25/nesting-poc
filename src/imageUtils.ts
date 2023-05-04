@@ -1,54 +1,128 @@
 import type { Client, TokenIdQuery } from '@unique-nft/sdk'
-import mergeImg from 'merge-img'
+import Jimp from 'jimp';
+import fs from 'fs';
+import { Config, KnownAvatar } from './utils';
+import { mutateImage } from './imageMutationUtils';
+import { MutantTokenComponents } from '../types/mutant';
 
-export const getTokenImageUrls = async (
+// Compose and create a path to which images should be stored
+export const createImagePath = (
+  config: Config,
+  fileName: string,
+) => {
+  const path = `${config.imagesDir}/${fileName}`
+  
+  if (!fs.existsSync(config.imagesDir)) {
+    fs.mkdirSync(config.imagesDir)
+  }
+
+  return path;
+}
+
+// Find a token's image if it exists in one of the usual places permitted by the schema
+const getTokenImageUrl = (token: any, searchImageOutsideOfSchema: boolean): string | null => {
+  if (token.file && token.file.fullUrl) {
+    return token.file.fullUrl
+  }
+  
+  if (token.image.fullUrl) {
+    return token.image.fullUrl
+  }
+  
+  if (searchImageOutsideOfSchema) {
+    // Searching for an image directly in properties
+    for (const prop of token.properties) {
+      if (prop.key == 'i.u') {
+        return prop.value
+      }
+    }
+  }
+
+  console.warn(`Couldn't find an image for token ${token.collectionId}/${token.tokenId}!`)
+  return null
+}
+
+// Get everything that is necessary to complete an image from a token:
+// its own image URL, its children's image URLs, and their mutators if present
+export const getTokenComponents = async (
   sdk: Client,
   parentToken: TokenIdQuery
-): Promise<string[]> => {
-  const imgArray: string[] = []
+): Promise<MutantTokenComponents[]> => {
+  const tokenArray: MutantTokenComponents[] = []
+
+  // Find and note a token's image if it exists in one of the usual places permitted by the schema
+  const findAndAddImageUrl = (token: any, searchImageOutsideOfSchema: boolean) => {
+    const imageUrl = getTokenImageUrl(token, searchImageOutsideOfSchema)
+    if (imageUrl) {
+      // find a 'mutator' property and get known mutators from it, separated by commas
+      const mutators = token.properties.find((x: {key: string, value: string}) => x.key == 'mutator')?.value.split(/\s*,\s*/)
+      tokenArray.push({
+        imageUrl,
+        mutators: mutators ?? [],
+      })
+    }
+  }
 
   console.log(`Getting parent token (${parentToken.collectionId}/${parentToken.tokenId}) image`)
   const token = await sdk.tokens.get(parentToken)
-  if ((token as any).file.fullUrl) {
-    imgArray.push((token as any).file.fullUrl)
-  } else if (token.image.fullUrl) {
-    imgArray.push(token.image.fullUrl)
-  }
+  findAndAddImageUrl(token, false)
 
   console.log(
-    `Getting bundle tokens image URLs for ${parentToken.collectionId}/${parentToken.tokenId}`
+    `Getting image URLs of tokens nested in ${parentToken.collectionId}/${parentToken.tokenId}`
   )
+  // Get the images of the tokens nested in the parent token, if there are any
   const bundle = await sdk.tokens.getBundle(parentToken)
   bundle.nestingChildTokens.forEach(async (token) => {
-    imgArray.push((token as any).image.fullUrl)
-    // get bundle for token
+    findAndAddImageUrl(token, true)
+  
+    // Just one step deeper, if there is another layer of nesting
     const childBundle = await sdk.tokens.getBundle(token)
     childBundle.nestingChildTokens.forEach((childToken) => {
-      imgArray.push((childToken as any).image.fullUrl)
+      findAndAddImageUrl(childToken, true)
     })
   })
 
-  return imgArray
+  return tokenArray
 }
 
-export const mergeImages = async (
-  imgArray: string[],
-  offset: number,
+// Compose a complete image from those of all given tokens, according to the image type (avatar)
+// and store it in the output file path.
+export const composeImage = async (
+  tokenArray: MutantTokenComponents[],
+  avatar: KnownAvatar,
   outputFilePath: string
 ): Promise<string> => {
-  const img = await mergeImg(imgArray, {
-    align: 'center',
-    offset,
-  })
+  console.log(
+    'Found images to merge:',
+    avatar == KnownAvatar.Mutant ? tokenArray : tokenArray.map(x => x.imageUrl),
+  );
+
+  let mergeImages = async (imageArray: MutantTokenComponents[]): Promise<Jimp> => {
+    const image = await Jimp.read(imageArray[0].imageUrl);
+    for (const {imageUrl, mutators} of imageArray.slice(1)) {
+      const childImage = await Jimp.read(imageUrl);
+
+      // mutate images of nested tokens
+      const offset = await mutateImage(childImage, mutators)
+
+      // merge the current image with this one
+      image.composite(childImage, offset[0], offset[1]);
+    }
+    
+    // Mutate the complete image if there are any mutators on the parent token
+    await mutateImage(image, imageArray[0].mutators)
+    return image;
+  }
 
   return new Promise<string>((resolve, reject) => {
-    img.write(outputFilePath, (err) => {
-      if (err) {
-        reject(err)
-      } else {
-        console.log(`Images were merged. The output is ${outputFilePath}`)
-        resolve(outputFilePath)
-      }
+    mergeImages(tokenArray).then((image) => {
+      if (!image) throw new Error('Image could not be created.')
+      image.write(outputFilePath)
+
+      console.log(`Images were merged. The output is ${outputFilePath}`)
+      resolve(outputFilePath)
+    }).catch((err) => {
+      reject(err)
     })
   })
 }
