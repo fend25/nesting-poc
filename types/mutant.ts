@@ -10,3 +10,5 @@ export interface MutantTokenComponents {
   imageUrl: string,
   mutators: KnownMutator[],
 }
+
+export type MutantWithLayer = MutantTokenComponents & { layer?: number };
