@@ -42,7 +42,7 @@ const getTokenImageUrl = (token: any | TokenByIdResponse, searchImageOutsideOfSc
   return null
 }
 
-const getTokenImageLayer = (token: any, defaultLayer = 1000): number => {
+const getTokenImageLayer = (token: any): number | undefined => {
   try {
     const attributes = token.attributes
       ? Array.isArray(token.attributes)
@@ -53,20 +53,19 @@ const getTokenImageLayer = (token: any, defaultLayer = 1000): number => {
 
     const layer = parseInt(layerAttribute?.value?._?.toString(), 10);
 
-    return Number.isNaN(layer) ? defaultLayer : layer;
+    return Number.isNaN(layer) ? undefined : layer;
   } catch (e) {
-    return defaultLayer;
+    return undefined;
   }
 }
 
 const mergeLayers = (tokens: MutantWithLayer[]): MutantTokenComponents[] => {
-  const sorted = tokens.sort((a, b) => a.layer - b.layer);
+  const sorted = tokens.sort((a, b) => (a.layer || 1000) - (b.layer || 1000));
   const uniqueLayers = sorted.reduce((acc, token) => {
-    const existing = acc.find((x) => x.layer === token.layer);
-
-    const existingIndex = acc.findIndex((x) => x.layer === token.layer);
+    const existingIndex = acc.findIndex((x) => x.layer && x.layer === token.layer);
 
     if (existingIndex !== -1) {
+      const existing = acc[existingIndex];
       console.warn(`Images  ${existing.imageUrl} and ${token.imageUrl} have the same layer ${token.layer}. Replacing...`);
       acc[existingIndex] = token;
 

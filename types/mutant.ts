@@ -11,4 +11,4 @@ export interface MutantTokenComponents {
   mutators: KnownMutator[],
 }
 
-export type MutantWithLayer = MutantTokenComponents & { layer: number };
+export type MutantWithLayer = MutantTokenComponents & { layer?: number };
