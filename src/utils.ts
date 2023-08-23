@@ -60,6 +60,7 @@ export enum KnownAvatar {
   Workaholic = 'workaholic', 
   Pirate = 'pirate',
   Mutant = 'mutant',
+  AngelHack = 'angelhack',
 }
 
 export namespace KnownAvatar {

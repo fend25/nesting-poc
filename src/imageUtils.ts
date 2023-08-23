@@ -1,9 +1,9 @@
-import type { Client, TokenIdQuery } from '@unique-nft/sdk'
+import type { Client, TokenIdQuery, TokenByIdResponse, DecodedAttributeDto } from '@unique-nft/sdk'
 import Jimp from 'jimp';
 import fs from 'fs';
 import { Config, KnownAvatar } from './utils';
 import { mutateImage } from './imageMutationUtils';
-import { MutantTokenComponents } from '../types/mutant';
+import { MutantTokenComponents, MutantWithLayer } from '../types/mutant';
 
 // Compose and create a path to which images should be stored
 export const createImagePath = (
@@ -20,7 +20,7 @@ export const createImagePath = (
 }
 
 // Find a token's image if it exists in one of the usual places permitted by the schema
-const getTokenImageUrl = (token: any, searchImageOutsideOfSchema: boolean): string | null => {
+const getTokenImageUrl = (token: any | TokenByIdResponse, searchImageOutsideOfSchema: boolean): string | null => {
   if (token.file && token.file.fullUrl) {
     return token.file.fullUrl
   }
@@ -42,13 +42,50 @@ const getTokenImageUrl = (token: any, searchImageOutsideOfSchema: boolean): stri
   return null
 }
 
+const getTokenImageLayer = (token: any, defaultLayer = 1000): number => {
+  try {
+    const attributes = token.attributes
+      ? Array.isArray(token.attributes)
+        ? token.attributes : Object.values(token.attributes)
+      : [];
+
+    const layerAttribute = Object.values(attributes).find((a) => a.name?._ === 'Layer');
+
+    const layer = parseInt(layerAttribute?.value?._?.toString(), 10);
+
+    return Number.isNaN(layer) ? defaultLayer : layer;
+  } catch (e) {
+    return defaultLayer;
+  }
+}
+
+const mergeLayers = (tokens: MutantWithLayer[]): MutantTokenComponents[] => {
+  const sorted = tokens.sort((a, b) => a.layer - b.layer);
+  const uniqueLayers = sorted.reduce((acc, token) => {
+    const existing = acc.find((x) => x.layer === token.layer);
+
+    const existingIndex = acc.findIndex((x) => x.layer === token.layer);
+
+    if (existingIndex !== -1) {
+      console.warn(`Images  ${existing.imageUrl} and ${token.imageUrl} have the same layer ${token.layer}. Replacing...`);
+      acc[existingIndex] = token;
+
+      return acc;
+    }
+
+    return [...acc, token];
+  }, [] as MutantWithLayer[]);
+
+  return uniqueLayers.map(({layer, ...rest}) => (rest));
+}
+
 // Get everything that is necessary to complete an image from a token:
 // its own image URL, its children's image URLs, and their mutators if present
 export const getTokenComponents = async (
   sdk: Client,
   parentToken: TokenIdQuery
 ): Promise<MutantTokenComponents[]> => {
-  const tokenArray: MutantTokenComponents[] = []
+  const tokenArray: MutantWithLayer[] = []
 
   // Find and note a token's image if it exists in one of the usual places permitted by the schema
   const findAndAddImageUrl = (token: any, searchImageOutsideOfSchema: boolean) => {
@@ -56,9 +93,13 @@ export const getTokenComponents = async (
     if (imageUrl) {
       // find a 'mutator' property and get known mutators from it, separated by commas
       const mutators = token.properties.find((x: {key: string, value: string}) => x.key == 'mutator')?.value.split(/\s*,\s*/)
+
+      const layer = getTokenImageLayer(token)
+
       tokenArray.push({
         imageUrl,
         mutators: mutators ?? [],
+        layer,
       })
     }
   }
@@ -71,7 +112,12 @@ export const getTokenComponents = async (
     `Getting image URLs of tokens nested in ${parentToken.collectionId}/${parentToken.tokenId}`
   )
   // Get the images of the tokens nested in the parent token, if there are any
-  const bundle = await sdk.tokens.getBundle(parentToken)
+  const bundle = await sdk.tokens.getBundle(parentToken).catch((error) => {
+    console.log(`No tokens are nested in ${parentToken.collectionId}/${parentToken.tokenId}`)
+
+    return { nestingChildTokens: [] }
+  })
+
   bundle.nestingChildTokens.forEach(async (token) => {
     findAndAddImageUrl(token, true)
   
@@ -82,7 +128,7 @@ export const getTokenComponents = async (
     })
   })
 
-  return tokenArray
+  return mergeLayers(tokenArray);
 }
 
 // Compose a complete image from those of all given tokens, according to the image type (avatar)

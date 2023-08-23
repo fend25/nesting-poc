@@ -6,7 +6,8 @@
   "author": "Yuriy Peshekhonov <yupeshekhonov@usetech.com>",
   "license": "MIT",
   "scripts": {
-    "server": "tsx src/server.ts"
+    "server": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts"
   },
   "dependencies": {
     "@koa/router": "^12.0.0",
